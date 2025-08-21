@@ -1,24 +1,42 @@
 import React, {useState} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Image,} from 'react-native';
 import { SafeAreaView} from 'react-native-safe-area-context';
+import {RootStackParamList} from '../../App';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
+// Define navigation prop type for LanguageScreen
+type LanguageScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Language'>;
 
-const LanguageScreen = () => {
+//Props interface - this screen recieves navigation as a prop
+
+type Props = {
+    navigation: LanguageScreenNavigationProp;
+}
+
+const LanguageScreen: React.FC<Props> = ({navigation}) => {
        const [selectedLanguage, setSelectedLanguage] = useState('English');
        
-       const handleLanguageSelect = () => {
-        // Later should navigate to the next screen
-        console.log('Selected language:', selectedLanguage);
+       // Function to navigate to WelcomeScreen
+       const handleLanguageSelect =  (language: string) => {
+        // Update the selected language state
+        setSelectedLanguage(language);
+       
+        console.log('Selected language:', language);
+
+        // Navigate to WelcomeScreen
+        navigation.navigate('Welcome');
        };
 
        return (
             <SafeAreaView style={styles.container}>
               <View style={styles.content}>
+
                 {/*app icon*/}
                 <View style={styles.iconContainer}>
-                    <View style={styles.icon}>
-                        <View style = {styles.document}/>
-                    </View>
+                  <Image
+                    source = {require('../assets/images/logo.png')}
+                    style = {styles.logo}
+                    resizeMode = "contain"/>
                 </View>
 
 
@@ -32,8 +50,12 @@ const LanguageScreen = () => {
                 <Text style = {styles.languageTitle}>Select a language</Text>
 
                 <TouchableOpacity style = {styles.languageButton}
-                onPress = {handleLanguageSelect}>
+                onPress = {()=>handleLanguageSelect('English')}>
                     <Text style = {styles.languageText}>English</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style = {styles.languageButton}
+                onPress = {()=>handleLanguageSelect('Sinhala')}>
+                    <Text style = {styles.languageText}>සිංහල</Text>
                 </TouchableOpacity>
                 </View>
 
@@ -58,25 +80,15 @@ const styles = StyleSheet.create({
     },
 
     iconContainer: {
-        marginBottom: 40,
-    },
-
-    icon: {
-        width: 80,
-        height: 80,
-        backgroundColor: '#4A90E2',
-        borderRadius: 16,
+        marginBottom: 4,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 8,
     },
+    logo:{
+        width:150,
+        height: 150,
+    },
+
     document: {
         width: 40,
         height: 48,
@@ -93,7 +105,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: 15,
         color: '#666666',
         textAlign: 'center',
         lineHeight: 22,
@@ -115,6 +127,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 40,
         borderRadius: 8,
         minWidth: 120,
+        marginBottom: 16,
     },
     languageText: {
         fontSize: 16,
