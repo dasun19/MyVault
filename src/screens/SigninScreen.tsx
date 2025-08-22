@@ -25,7 +25,7 @@ const SigninScreen: React.FC<Props> = ({navigation}) => {
 
             if (success){
                 //Alert.alert("Login Success", "Biometric Verified");
-               navigation.navigate("Language");
+               navigation.navigate("Home");
             }else {
                 Alert.alert("Biometric Faild", "Try PIN instead");
             }
@@ -43,7 +43,7 @@ const SigninScreen: React.FC<Props> = ({navigation}) => {
 
         if (pin === "123456"){
            
-            navigation.navigate("Language");
+            navigation.navigate("Home");
             Alert.alert("Login Success", "PIN Verified");
 
         }else{
