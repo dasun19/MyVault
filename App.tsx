@@ -14,6 +14,7 @@ export type RootStackParamList = {
   Signin: undefined; // For my SigninScreen
   CreateAccount: undefined; // For my CreateAccountScreen
   Home: undefined;
+  Document: undefined;
 };
 
 // Create a stack navigator

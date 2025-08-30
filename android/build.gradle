@@ -5,7 +5,12 @@ buildscript {
         compileSdkVersion = 36
         targetSdkVersion = 36
         ndkVersion = "27.1.12297006"
-        kotlinVersion = "2.1.20"
+        kotlinVersion = "1.9.10"
+
+         // ADD these to force the text recognition package to use SDK 36
+        TextRecognition_compileSdkVersion = 36
+        TextRecognition_buildToolsVersion = "36.0.0"
+        TextRecognition_targetSdkVersion = 36
     }
     repositories {
         google()

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
+import DocumentScreen from '../screens/DocumentScreen';
 import { RouteProp } from '@react-navigation/native';
 import { Image } from 'react-native';
 
@@ -60,7 +61,7 @@ const BottomTabs = () => {
   return (
     <Tab.Navigator screenOptions={screenOptions}>
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="My Documents" component={HomeScreen} />
+      <Tab.Screen name="My Documents" component={DocumentScreen} />
       <Tab.Screen name="More" component={HomeScreen} />
     </Tab.Navigator>
   );
