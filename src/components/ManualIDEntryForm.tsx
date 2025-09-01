@@ -444,9 +444,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   doneButton: {
-    flex: 1,
     backgroundColor: '#007AFF',
     paddingVertical: 14,
+    marginLeft:20,
+    marginRight:20,
     borderRadius: 10,
     alignItems: 'center',
   },

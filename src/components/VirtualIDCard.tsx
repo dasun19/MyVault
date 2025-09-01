@@ -169,13 +169,14 @@ const VirtualIDCard: React.FC<VirtualIDCardProps> = ({
           <Text style={styles.hashPreview}>
             Hash: {(cardData.hash || 'null').substring(0, 16)}...
           </Text>
-          <Text style={styles.digitalStamp}>Digital National ID</Text>
+         
           {/* Verification Badge */}
             {cardData.isVerified && (
               <View style={styles.verificationBadge}>
-                <Text style={styles.verificationIcon}>✓</Text>
+                <Text style={styles.verificationIcon}>✓ Verified</Text>
               </View>
             )}
+            
         </View>
 
       </View>
@@ -331,13 +332,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     right: -5,
-    width: 20,
+    width: 80,
     height: 20,
     borderRadius: 10,
     backgroundColor: '#34c759',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 0,
     borderColor: 'white',
   },
   verificationIcon: {

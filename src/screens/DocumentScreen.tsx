@@ -9,7 +9,8 @@ import {
     Alert,
     ScrollView,
     Platform,
-    PermissionsAndroid
+    PermissionsAndroid,
+    Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,6 +25,7 @@ import Share from 'react-native-share';
 import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import CheckBox from '@react-native-community/checkbox';
 import { Picker } from '@react-native-picker/picker';
+import { createSecureToken } from '../utils/jwtUtils';
 
 type DocumentScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Document'>;
 
@@ -124,31 +126,74 @@ const DocumentScreen: React.FC<Props> = ({ navigation }) => {
         setShowEditModel(true);
    };
 
-   //Generate QR code with selected fields and expiration
-   const handleGenerateQR = () => {
-    if (!savedIDCard) return;
+//    //Generate QR code with selected fields and expiration
+//    const handleGenerateQR = () => {
+//     if (!savedIDCard) return;
 
-    // Create data object with selected fields
-    const data: Partial<IDCardData> = {};
-    for (const key in selectedFields){
-        if(selectedFields[key as keyof typeof selectedFields]){
-            data[key as keyof IDCardData] = savedIDCard[key as keyof IDCardData];
-        }
+//     // Create data object with selected fields
+//     const data: Partial<IDCardData> = {};
+//     for (const key in selectedFields){
+//         if(selectedFields[key as keyof typeof selectedFields]){
+//             data[key as keyof IDCardData] = savedIDCard[key as keyof IDCardData];
+//         }
+//     }
+
+//     // Set expiration timestamp (in milliseconds)
+//     let expires: number | null = null;
+//     if (expirationOption !== 'No Expiration'){
+//         const now = Date.now();
+//         if (expirationOption === '1 Hour') expires = now + 3600000;
+//         else if (expirationOption === '1 Day') expires = now + 86400000;
+//         else if (expirationOption === '1 Week') expires = now + 604800000;
+//         }
+
+//         // Create QR code data as JSON
+//         const qrData = JSON.stringify({data, expires});
+//         setQrValue(qrData);
+//    };
+
+   // Replace your current handleGenerateQR function with this updated version
+const handleGenerateQR = async () => {
+  if (!savedIDCard) return;
+
+  const data: Partial<IDCardData> = {};
+  for (const key in selectedFields) {
+    if (selectedFields[key as keyof typeof selectedFields]) {
+      data[key as keyof IDCardData] = savedIDCard[key as keyof IDCardData];
     }
+  }
 
-    // Set expiration timestamp (in milliseconds)
-    let expires: number | null = null;
-    if (expirationOption !== 'No Expiration'){
-        const now = Date.now();
-        if (expirationOption === '1 Hour') expires = now + 3600000;
-        else if (expirationOption === '1 Day') expires = now + 86400000;
-        else if (expirationOption === '1 Week') expires = now + 604800000;
-        }
+  try {
+    const secureToken = await createSecureToken(data, expirationOption);
+    const baseUrl = 'https://your-verification-site.com/verify'; // Replace if needed
+    const verificationUrl = `${baseUrl}?token=${encodeURIComponent(secureToken)}`;
+    setQrValue(verificationUrl);
+    console.log('Generated QR Value (URL with JWT):', verificationUrl);  // Debug: Check console
+  } catch (error) {
+    console.error('QR Generation Error:', error);
+    Alert.alert('Error', 'Failed to generate QR code.');
+  }
+};
 
-        // Create QR code data as JSON
-        const qrData = JSON.stringify({data, expires});
-        setQrValue(qrData);
-   };
+// Display token info
+const getTokenDisplayInfo = () => {
+    if (!qrValue) return null;
+    
+    try {
+        const tokenParts = qrValue.split('.');
+        const header = JSON.parse(atob(tokenParts[0]));
+        const payload = JSON.parse(atob(tokenParts[1]));
+        
+        return {
+            algorithm: header.alg,
+            expiresAt: payload.exp ? new Date(payload.exp * 1000) : null,
+            issuedAt: payload.iat ? new Date(payload.iat * 1000) : null,
+            issuer: payload.iss
+        };
+    } catch (error) {
+        return null;
+    }
+};
 
    // Request storage permission for Android
     const requestStoragePermission = async () => {
@@ -205,6 +250,9 @@ const DocumentScreen: React.FC<Props> = ({ navigation }) => {
             Alert.alert('Error', 'Failed to save QR code.');
         }
     };
+
+
+
 
    // Handle verify ID card (placeholder for future implementation)
    const handleVerifyCard = async () => {
@@ -270,30 +318,28 @@ const DocumentScreen: React.FC<Props> = ({ navigation }) => {
                     <Text style={styles.optionsIcon}>⋯</Text>
                 </TouchableOpacity>
             </View>
-            
             {/* Virtual ID Card Display */}
             <VirtualIDCard 
                 cardData={savedIDCard!}
                 showQRCode={false}
             />
-            
-            {/* Verification Status */}
+            {/* Verification Status 
             {savedIDCard?.isVerified && (
                 <View style={styles.verificationBadge}>
                     <Text style={styles.verificationText}>✓ Verified</Text>
                 </View>
             )}
-
-            {/* Verify and Share buttons */}
+            */}
+            {/* Only show Verify button if not verified */}
             <View style={styles.actionButtons}>
-                <TouchableOpacity 
-                    style={styles.verifyButton}
-                    onPress={handleVerifyCard}
-                >
-                    <Text style={styles.buttonText}>
-                        {savedIDCard?.isVerified ? 'Unverify' : 'Verify'}
-                    </Text>
-                </TouchableOpacity>
+                {!savedIDCard?.isVerified && (
+                    <TouchableOpacity 
+                        style={styles.verifyButton}
+                        onPress={handleVerifyCard}
+                    >
+                        <Text style={styles.buttonText}>Verify</Text>
+                    </TouchableOpacity>
+                )}
                 <TouchableOpacity 
                     style={styles.shareButton}
                     onPress={() => setShowShareModel(true)}
@@ -301,6 +347,8 @@ const DocumentScreen: React.FC<Props> = ({ navigation }) => {
                     <Text style={styles.buttonText}>Share</Text>
                 </TouchableOpacity>
             </View>
+             {/* Separator line */}
+            <View style={styles.menuSeparator} />
         </View>
     );
 
@@ -440,6 +488,8 @@ const DocumentScreen: React.FC<Props> = ({ navigation }) => {
                             <Picker.Item label="1 Week" value="1 Week" />
                         </Picker>
 
+                        {!qrValue && (
+                        <View>
                         <TouchableOpacity 
                             style={styles.generateButton}
                             onPress={handleGenerateQR}
@@ -447,32 +497,9 @@ const DocumentScreen: React.FC<Props> = ({ navigation }) => {
                             <Text style={styles.buttonText}>Generate QR Code</Text>
                         </TouchableOpacity>
 
-                        {qrValue && (
-                            <View style={styles.qrContainer}>
-                                <ViewShot 
-                                    ref={viewShotRef} 
-                                    options={{ format: 'png', quality: 1 }}
-                                    style={styles.qrViewShot}
-                                >
-                                    <QRCode value={qrValue} size={200} />
-                                </ViewShot>
-                                
-                                <TouchableOpacity 
-                                    style={styles.shareQrButton}
-                                    onPress={handleShareQR}
-                                >
-                                    <Text style={styles.buttonText}>Share QR Code</Text>
-                                </TouchableOpacity>
-                                
-                                <TouchableOpacity 
-                                    style={styles.saveQrButton}
-                                    onPress={handleSaveQR}
-                                >
-                                    <Text style={styles.buttonText}>Save to Gallery</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-
+                        
+                        
+                        
                         <TouchableOpacity 
                             style={styles.closeShareButton}
                             onPress={() => {
@@ -482,6 +509,97 @@ const DocumentScreen: React.FC<Props> = ({ navigation }) => {
                         >
                             <Text style={styles.buttonText}>Close</Text>
                         </TouchableOpacity>
+                        </View>)}
+
+                      
+{qrValue && (
+  <ScrollView style={styles.qrContainer}>
+    <ViewShot 
+      ref={viewShotRef} 
+      options={{ format: 'png', quality: 1 }}
+      style={styles.qrViewShot}
+    >
+      <View style={styles.qrCodeWrapper}>
+        <QRCode 
+          value={qrValue} 
+          size={200} 
+          logo={require('../assets/images/logo.png')}
+          logoSize={30}
+          logoBackgroundColor="transparent"
+        />
+        <Text style={styles.qrSecurityLabel}>🔒 Secure Verification URL</Text>
+        <Text style={styles.qrExpiryInfo}>
+          {expirationOption === 'No Expiration' 
+            ? 'No Expiration' 
+            : `Expires in ${expirationOption}`
+          }
+        </Text>
+      </View>
+    </ViewShot>
+
+    {/* URL Information Display */}
+    <View style={styles.urlDisplayContainer}>
+      <Text style={styles.urlDisplayTitle}>Generated Verification URL:</Text>
+      <Text style={styles.urlDisplayText} numberOfLines={3} ellipsizeMode="middle">
+        {qrValue}
+      </Text>
+      <Text style={styles.urlDisplayNote}>
+        • This URL contains your JWT token as a parameter{'\n'}
+        • Recipients can verify your ID by visiting this URL{'\n'}
+        • The URL can also be scanned from the app's verifier
+      </Text>
+    </View>
+
+    {/* Token Information Display */}
+    <View style={styles.tokenInfoContainer}>
+      <Text style={styles.tokenInfoTitle}>Token Information:</Text>
+      <Text style={styles.tokenInfoText}>
+        • Digitally signed with secure algorithm
+      </Text>
+      <Text style={styles.tokenInfoText}>
+        • Contains only selected data fields
+      </Text>
+      <Text style={styles.tokenInfoText}>
+        • {expirationOption === 'No Expiration' 
+            ? 'No expiration set' 
+            : `Expires in ${expirationOption}`
+          }
+      </Text>
+      <Text style={styles.tokenInfoText}>
+        • Packaged as a verification URL for easy sharing
+      </Text>
+    </View>
+
+    <View style={styles.qrShareButtons}>
+      <TouchableOpacity 
+        style={styles.shareQrButton}
+        onPress={handleShareQR}
+      >
+        <Text style={styles.buttonText}>Share QR Code</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={styles.saveQrButton}
+        onPress={handleSaveQR}
+      >
+        <Text style={styles.buttonText}>Save to Gallery</Text>
+      </TouchableOpacity>
+    </View>
+
+    <TouchableOpacity 
+      style={styles.cancelButton}
+      onPress={() => {
+        setShowShareModel(false);
+        setQrValue(null);
+      }}
+    >
+      <Text style={styles.buttonText}>Cancel</Text>
+    </TouchableOpacity>
+  </ScrollView>
+
+)}
+
+                      
                     </View>
                 </View>
             </Modal>
@@ -740,18 +858,19 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     verifyButton: {
-        backgroundColor: '#ff9500',
+        backgroundColor: '#898cecff',
         padding: 12,
         borderRadius: 8,
         minWidth: 100,
         alignItems: 'center',
     },
     shareButton: {
-        backgroundColor: '#34c759',
+        backgroundColor: '#898cecff',
         padding: 12,
         borderRadius: 8,
         minWidth: 100,
         alignItems: 'center',
+        
     },
     buttonText: {
         color: 'white',
@@ -769,7 +888,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 20,
         width: '90%',
-        maxHeight: '80%',
+        maxHeight: '100%',
     },
     shareTitle: {
         fontSize: 20,
@@ -804,7 +923,7 @@ const styles = StyleSheet.create({
         marginTop: 16,
     },
     qrContainer: {
-        alignItems: 'center',
+        // alignItems: 'center',
         marginTop: 16,
     },
     qrViewShot: {
@@ -812,26 +931,115 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     shareQrButton: {
-        backgroundColor: '#34c759',
+        backgroundColor: '#5294dbff',
         padding: 12,
         borderRadius: 8,
         alignItems: 'center',
         marginTop: 12,
     },
     saveQrButton: {
-        backgroundColor: '#ff9500',
+        backgroundColor: '#5294dbff',
         padding: 12,
         borderRadius: 8,
         alignItems: 'center',
-        marginTop: 8,
+        marginTop: 12,
     },
     closeShareButton: {
-        backgroundColor: '#ff3b30',
+        backgroundColor: '#c5c1c1ff',
         padding: 12,
         borderRadius: 8,
         alignItems: 'center',
         marginTop: 16,
     },
+    menuSeparator: {
+    height: 2,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 8,
+    marginHorizontal: 2,
+  },
+  qrShareButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap:20,
+  },
+  cancelButton: {
+     backgroundColor: '#5294dbff',
+     padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+    minWidth: 100,
+  },
+
+qrCodeWrapper: {
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: 'white',
+},
+qrSecurityLabel: {
+    marginTop: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#34c759',
+    textAlign: 'center',
+},
+qrExpiryInfo: {
+    marginTop: 5,
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+},
+tokenInfoContainer: {
+    backgroundColor: '#f8f9fa',
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+},
+tokenInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+},
+tokenInfoText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+    lineHeight: 18,
+},
+urlDisplayContainer: {
+    backgroundColor: '#f8f9fa',
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#28a745',
+  },
+  urlDisplayTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  urlDisplayText: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontFamily: 'monospace',
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 4,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  urlDisplayNote: {
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 16,
+  },
+  
 });
 
 export default DocumentScreen;

@@ -1,3 +1,4 @@
+import 'react-native-get-random-values';
 import React from 'react';
 import LanguageScreen from './src/screens/LanguageScreen';
 import WelcomeScreen from './src/screens/WelcomeScreen';
